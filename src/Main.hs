@@ -6,12 +6,12 @@ module Main where
 import Control.Monad (void)
 import Data.Function ((&))
 import Data.Foldable (traverse_)
-import Language.Javascript.JSaddle 
 import Miso
 import Miso.Canvas as Canvas
+import Miso.String (MisoString)
 
 import THREE.BoxGeometry
-import THREE.Internal
+import THREE.Internal 
 import THREE.Light
 import THREE.Mesh
 import THREE.MeshLambertMaterial
@@ -25,10 +25,6 @@ import THREE.Vector3
 import THREE.WebGLRenderer
 
 import API
-
-----------------------------------------------------------------------
--- parameters
-----------------------------------------------------------------------
 
 ----------------------------------------------------------------------
 -- model
@@ -56,8 +52,17 @@ handleView () = div_ []
   , three_
   ]
 
+myCanvas :: MisoString
+myCanvas = "myCanvas"
+
 three_ :: View Action
-three_ = Canvas.canvas [] (asyncCallback draw)
+three_ = 
+  Canvas.canvas 
+  [ id_ myCanvas
+  -- , width_ "800"
+  -- , height_ "600"
+  ] 
+  (asyncCallback draw)
 
 draw :: Three ()
 draw = do
@@ -82,6 +87,7 @@ draw = do
   texture2 <- THREE.TextureLoader.new >>= load "miso.png"
   material2 <- THREE.MeshLambertMaterial.new
   material2 & THREE.MeshLambertMaterial.map .= Just texture2
+  -- geometry2 <- THREE.BoxGeometry.new (1, 1, 1, Nothing, Nothing, Nothing)
   geometry2 <- THREE.BoxGeometry.new (1, 1, 1, Just 1, Just 1, Just 1)
   mesh2 <- THREE.Mesh.new (geometry2, material2)
   (mesh2 ^. position) !.. setXYZ 1 0 0 
@@ -92,8 +98,12 @@ draw = do
   camera1 & position !. z .= 6
 
   renderer1 <- THREE.WebGLRenderer.new
+  -- renderer1 <- myNewWebGLRenderer myCanvas
+  -- renderer1 & theCanvas .= myCanvas
   renderer1 & setSize (winWidthI, winHeightI, True)
+  renderer1 & render (scene1, camera1)
 
+  {-
   renderer1 & setAnimationLoop (\_ _ [valTime] -> do
     time <- valToNumber valTime
     mesh2 & rotation !. y .= (time/1000)
@@ -101,6 +111,7 @@ draw = do
     )
 
   domElement renderer1 >>= appendInBody 
+-}
 
 ----------------------------------------------------------------------
 -- update handler
@@ -114,6 +125,10 @@ handleUpdate () = pure ()
 -- main
 ----------------------------------------------------------------------
 
+#ifdef WASM
+foreign export javascript "hs_start" main :: IO ()
+#endif
+
 main :: IO ()
 main = run $ do
 
@@ -125,8 +140,4 @@ main = run $ do
         }
 
   startComponent app
-
-#ifdef WASM
-foreign export javascript "hs_start" main :: IO ()
-#endif
 

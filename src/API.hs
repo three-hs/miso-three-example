@@ -2,18 +2,20 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module API 
-  ( appendInBody
+  ( valToNumber
   , winInnerWidth
   , winInnerHeight
-  , valToNumber
+  , myNewWebGLRenderer
+  , theCanvas
+  , appendInBody
   ) where
 
-import Control.Monad
 import Control.Lens hiding ((#))
-import Language.Javascript.JSaddle
+import Language.Javascript.JSaddle as JS
 
+import THREE.Internal hiding ((^.))
 import THREE.PointLight
-import THREE.Scene
+import THREE.WebGLRenderer
 
 instance FromJSVal PointLight where
   fromJSVal = pure . Just . PointLight
@@ -26,3 +28,16 @@ winInnerWidth = valToNumber =<< jsg "window"  ^. js "innerWidth"
 
 winInnerHeight :: JSM Double
 winInnerHeight = valToNumber =<< jsg "window"  ^. js "innerHeight"
+
+myNewWebGLRenderer :: JSString -> THREE.Internal.Three WebGLRenderer
+myNewWebGLRenderer canvasId = do
+  o <- obj
+  v <- toJSVal canvasId
+  setProp "canvas" v o
+  -- o <# "canvas" $ canvasId
+  THREE.Internal.new WebGLRenderer "WebGLRenderer" o
+
+theCanvas :: Property WebGLRenderer JSString
+theCanvas = property "canvas"
+
+
