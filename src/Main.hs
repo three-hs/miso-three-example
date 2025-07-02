@@ -1,85 +1,134 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
-import Data.Map as Map ((!?), adjust, keys, notMember)
+-- import Control.Monad
+import Data.Function ((&))
+import Data.Foldable (traverse_)
+import Language.Javascript.JSaddle 
+-- import Data.Map as Map ((!?), adjust, keys, notMember)
 import Miso
-import Miso.Lens as Lens
-import Miso.Media (Media(..), videoHeight, videoWidth)
+-- import Miso.Lens as Lens
+import Miso.Canvas as Canvas
 import Miso.String (MisoString, ms)
 
-import Model
+import THREE.BoxGeometry
+import THREE.Internal
+import THREE.Light
+import THREE.Mesh
+-- import THREE.MeshBasicMaterial
+import THREE.MeshLambertMaterial
+import THREE.Object3D
+import THREE.PerspectiveCamera
+import THREE.PointLight
+import THREE.Scene
+import THREE.SphereGeometry
+import THREE.TextureLoader
+import THREE.Vector3
+import THREE.WebGLRenderer
+
+import API
 
 ----------------------------------------------------------------------
 -- parameters
 ----------------------------------------------------------------------
 
-theSmallWidth :: Int
-theSmallWidth = 400
+----------------------------------------------------------------------
+-- model
+----------------------------------------------------------------------
 
-thePlaylist :: [MisoString]
-thePlaylist = []
+type Model = ()
 
 ----------------------------------------------------------------------
 -- actions
 ----------------------------------------------------------------------
 
-data Action
-  = ActionAskVideo MisoString
-  | ActionAskSwitch
-  | ActionAskSize ClipId Media
-  | ActionSetSize ClipId Int Int
+type Action = ()
 
 ----------------------------------------------------------------------
 -- view handler
 ----------------------------------------------------------------------
 
 handleView :: Model -> View Action
-handleView model = div_ [] 
+handleView () = div_ [] 
   [ p_ []
       [ a_ [ href_ "https://github.com/juliendehos/miso-three-test" ] [ text "source" ]
       , text " - "
       , a_ [ href_ "https://juliendehos.github.io/miso-three-test/" ] [ text "demo" ]
       ]
-  , p_ [] 
-      [ select_ [ onChange ActionAskVideo ] myOptions
-      , button_ [ onClick ActionAskSwitch ] [ mySmall ]
-      ]
-  , p_ [] myVideo
+  , three_
   ]
-  where
 
-    myOptions = 
-      option_ [ value_ "" ] [ "--" ] :
-      map fmtClip (keys $ model^.modelPlaylist)
+three_ :: View Action
+three_ = Canvas.canvas [] (asyncCallback draw)
 
-    fmtClip cId = let i = cId^.clipId in option_ [ value_ i ] [ text i ]
+draw :: Three ()
+draw = do
 
-    mySmall = if model^.modelSmall then "switch to original size" else "switch to small size"
+  winWidth <- winInnerWidth
+  winHeight <- winInnerHeight
+  let winWidthI = round winWidth
+  let winHeightI = round winHeight
 
-    myVideo = 
-      let mPlaying = model^.modelPlaying
-          mClip = mPlaying >>= ((model^.modelPlaylist) !?)
-      in case (mPlaying, mClip)  of
-        (Just i, Just c) -> 
-          [ video_ 
-            ( src_ (i^.clipId) : 
-              fmtSize c ++
-              [ id_ "myvideo"
-              , controls_ True
-              , onCanPlayWith (ActionAskSize i)
-              ]
-            )
-            []
-          ]
-        _ -> []
+  scene1 <- THREE.Scene.new 
 
-    fmtSize c =
-      let w = max 1 (c^.clipWidth)
-          h = c^.clipHeight
-      in if model^.modelSmall
-      then [ width_ (ms theSmallWidth), height_ (ms $ theSmallWidth*h `div` w) ]
-      else [ width_ (ms w), height_ (ms h) ]
+  light1 <- THREE.PointLight.new
+  light1 & intensity .= 300
+  light1 ^. position !.. setXYZ 8 8 8
+  scene1 & add light1
+
+  material1 <- THREE.MeshLambertMaterial.new
+  geometry1 <- THREE.SphereGeometry.new
+  mesh1 <- THREE.Mesh.new (geometry1, material1)
+  mesh1 & position !. x .= (-1)
+
+  texture2 <- THREE.TextureLoader.new >>= load "miso.png"
+  material2 <- THREE.MeshLambertMaterial.new
+  material2 & THREE.MeshLambertMaterial.map .= Just texture2
+  geometry2 <- THREE.BoxGeometry.new (1, 1, 1, Just 1, Just 1, Just 1)
+  -- geometry2 <- THREE.BoxGeometry.new (1, 1, 1, Nothing, Nothing, Nothing)
+  mesh2 <- THREE.Mesh.new (geometry2, material2)
+  (mesh2 ^. position) !.. setXYZ 1 0 0 
+
+  traverse_ (`add` scene1) [mesh1, mesh2]
+  -- scene1 & add mesh1 >>= add mesh2
+
+  camera1 <- THREE.PerspectiveCamera.new (70, winWidth / winHeight, 0.1, 100)
+  camera1 & position !. z .= 6
+
+  renderer1 <- THREE.WebGLRenderer.new
+  renderer1 & setSize (winWidthI, winHeightI, True)
+
+  renderer1 & setAnimationLoop (\_ _ [valTime] -> do
+    time <- valToNumber valTime
+    mesh2 & rotation !. y .= (time/1000)
+    renderer1 & render (scene1, camera1)
+    )
+
+  domElement renderer1 >>= appendInBody 
+
+
+{-
+draw :: Three ()
+draw = do
+  width <- windowInnerWidth
+  height <- windowInnerHeight
+  let value = realToFrac (width `div` height)
+  scene <- THREE.Scene.new
+  camera <- THREE.PerspectiveCamera.new (75.0, value, 0.1, 1000)
+  renderer <- THREE.WebGLRenderer.new
+  renderer & THREE.WebGLRenderer.setSize (width, height, True)
+  geometry <- THREE.BoxGeometry.new (10,10,10,Nothing,Nothing,Nothing)
+  material <- THREE.MeshBasicMaterial.new Nothing
+  material & THREE.MeshBasicMaterial.color .= "#000fff"
+  cube <- THREE.Mesh.new (geometry,material)
+  void (scene & THREE.Object3D.add cube)
+  camera & THREE.Object3D.position !. z .= 300
+  renderer & THREE.WebGLRenderer.render (scene, camera)
+  cube & THREE.Object3D.rotation !. x += 0.1
+  cube & THREE.Object3D.rotation !. y += 0.1
+-}
 
 ----------------------------------------------------------------------
 -- update handler
@@ -87,23 +136,7 @@ handleView model = div_ []
 
 handleUpdate :: Action -> Effect Model Action
 
-handleUpdate (ActionAskVideo str) = do
-  playlist <- use modelPlaylist
-  modelPlaying .= if str == ""  || notMember (mkClipId str) playlist
-    then Nothing 
-    else Just (mkClipId str)
-
-handleUpdate ActionAskSwitch = 
-  modelSmall %= not
-
-handleUpdate (ActionAskSize cId m) = 
-  io (ActionSetSize cId <$> videoWidth m <*> videoHeight m)
-
-handleUpdate (ActionSetSize cId w h) = 
-  modelPlaylist %= adjust upClip cId
-  where
-    upClip c = c & clipWidth .~ w
-                 & clipHeight .~ h
+handleUpdate () = pure ()
 
 ----------------------------------------------------------------------
 -- main
@@ -111,12 +144,15 @@ handleUpdate (ActionSetSize cId w h) =
 
 main :: IO ()
 main = run $ do
-  let model = mkModel thePlaylist
-      app = defaultComponent model handleUpdate handleView
+
+  let model = ()
+
+      app :: Component "app" Model Action
+      app = (defaultComponent model handleUpdate handleView)
+        { logLevel = DebugAll
+        }
+
   startComponent app
-    { events = defaultEvents <> mediaEvents
-    , logLevel = DebugAll
-    }
 
 #ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
