@@ -5,7 +5,7 @@ version:                0.2
 executable app
   hs-source-dirs:       src
   main-is:              Main.hs
-  other-modules:        API
+  other-modules:        API Model
   build-depends:        base, lens, jsaddle, miso, three
   default-language:     GHC2021
   ghc-options:          -Wall -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=hs_start" -ddump-splices
