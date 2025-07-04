@@ -7,11 +7,13 @@ module API
   , winInnerHeight
   , myNewWebGLRenderer
   , appendInBody
+  , myGetTime
   ) where
 
 import Control.Monad (void)
 import Control.Lens hiding ((#))
 import Language.Javascript.JSaddle as JS
+import Miso
 
 import THREE.Internal hiding ((^.))
 import THREE.PointLight
@@ -34,4 +36,7 @@ myNewWebGLRenderer canvasId = do
   o <- obj
   setProp "canvas" canvasId o
   THREE.Internal.new WebGLRenderer "WebGLRenderer" o
+
+myGetTime :: JSM Double
+myGetTime = (* 0.001) <$> now
 
