@@ -2,13 +2,12 @@
 
 module Main where
 
-import Control.Monad (void, when)
+import Control.Monad (void)
 import Data.Function ((&))
 import Data.Foldable (traverse_)
 import Miso
-import Miso.Lens qualified as Lens
 import Miso.Canvas as Canvas
-import Miso.String (MisoString)
+import Miso.String (MisoString, ms)
 
 import THREE.BoxGeometry
 import THREE.Internal 
@@ -25,48 +24,67 @@ import THREE.Vector3
 import THREE.WebGLRenderer
 
 import API
-import Model
+
+----------------------------------------------------------------------
+-- parameters
+----------------------------------------------------------------------
+
+canvasId :: MisoString
+canvasId = "threeCanvas"
+
+canvasWidth, canvasHeight :: Int
+canvasWidth = 800
+canvasHeight = 600
+
+canvasWidthD, canvasHeightD :: Double
+canvasWidthD = fromIntegral canvasWidth
+canvasHeightD = fromIntegral canvasHeight
+
+----------------------------------------------------------------------
+-- model
+----------------------------------------------------------------------
+
+type Model = ()
 
 ----------------------------------------------------------------------
 -- actions
 ----------------------------------------------------------------------
 
-data Action 
-  = ActionInitRenderer
+type Action = ()
 
 ----------------------------------------------------------------------
 -- view handler
 ----------------------------------------------------------------------
 
 handleView :: Model -> View Action
-handleView model = div_ [] 
-  [ p_ []
+handleView _ = div_ [] 
+  [ h1_ [] [ text "miso-three-test" ]
+  , p_ []
       [ a_ [ href_ "https://github.com/juliendehos/miso-three-test" ] [ text "source" ]
       , text " - "
       , a_ [ href_ "https://juliendehos.github.io/miso-three-test/" ] [ text "demo" ]
       ]
-  , three_ (model Lens.^. mIsInitialized)
+  , three_
   ]
 
-myCanvas :: MisoString
-myCanvas = "myCanvas"
-
-three_ :: Bool -> View Action
-three_ initOk = 
+three_ :: View Action
+three_ = 
   Canvas.canvas 
-  [ id_ myCanvas
-  -- , width_ "800"
-  -- , height_ "600"
+  [ id_ canvasId
+  , width_ (ms canvasWidth)
+  , height_ (ms canvasHeight)
   ] 
-  (asyncCallback (draw initOk))
+  (asyncCallback draw)
 
-draw :: Bool -> Three ()
-draw initOk = do
+draw :: Three ()
+draw = do
 
+  {-
   winWidth <- winInnerWidth
   winHeight <- winInnerHeight
   let winWidthI = round winWidth
   let winHeightI = round winHeight
+  -}
 
   scene1 <- THREE.Scene.new 
 
@@ -90,34 +108,31 @@ draw initOk = do
 
   traverse_ (`add` scene1) [mesh1, mesh2]
 
-  camera1 <- THREE.PerspectiveCamera.new (70, winWidth / winHeight, 0.1, 100)
+  camera1 <- THREE.PerspectiveCamera.new (70, canvasWidthD/canvasHeightD, 0.1, 100)
+  -- camera1 <- THREE.PerspectiveCamera.new (70, winWidth / winHeight, 0.1, 100)
   camera1 & position !. z .= 6
 
-  when initOk $ do
-    -- renderer1 <- THREE.WebGLRenderer.new
-    renderer1 <- myNewWebGLRenderer myCanvas
-    -- renderer1 & theCanvas .= myCanvas
-    renderer1 & setSize (winWidthI, winHeightI, True)
-    renderer1 & render (scene1, camera1)
+  renderer1 <- getElementById canvasId >>= myNewWebGLRenderer 
+  -- renderer1 <- THREE.WebGLRenderer.new
+  renderer1 & setSize (canvasWidth, canvasHeight, True)
+  -- renderer1 & setSize (winWidthI, winHeightI, True)
 
-  {-
+  -- renderer1 & render (scene1, camera1)
+
+  -- TODO handle time and loop using miso
   renderer1 & setAnimationLoop (\_ _ [valTime] -> do
     time <- valToNumber valTime
     mesh2 & rotation !. y .= (time/1000)
     renderer1 & render (scene1, camera1)
     )
 
-  domElement renderer1 >>= appendInBody 
-  -}
-
 ----------------------------------------------------------------------
 -- update handler
 ----------------------------------------------------------------------
 
-handleUpdate :: Action -> Effect Model Action
+handleUpdate :: () -> Effect Model Action
 
-handleUpdate ActionInitRenderer = 
-  mIsInitialized Lens..= True
+handleUpdate () = pure ()
 
 ----------------------------------------------------------------------
 -- main
@@ -129,10 +144,9 @@ foreign export javascript "hs_start" main :: IO ()
 
 main :: IO ()
 main = run $ do
-  let model = mkModel
+  let model = ()
   startComponent
     (component model handleUpdate handleView)
       { logLevel = DebugAll
-      , initialAction = Just ActionInitRenderer
       }
 

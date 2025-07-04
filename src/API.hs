@@ -6,7 +6,6 @@ module API
   , winInnerWidth
   , winInnerHeight
   , myNewWebGLRenderer
-  -- , theCanvas
   , appendInBody
   ) where
 
@@ -30,16 +29,9 @@ winInnerWidth = valToNumber =<< jsg "window"  ^. js "innerWidth"
 winInnerHeight :: JSM Double
 winInnerHeight = valToNumber =<< jsg "window"  ^. js "innerHeight"
 
-myNewWebGLRenderer :: JSString -> THREE.Internal.Three WebGLRenderer
+myNewWebGLRenderer :: JSVal -> THREE.Internal.Three WebGLRenderer
 myNewWebGLRenderer canvasId = do
   o <- obj
-  -- o <# "canvas" $ canvasId
-  v <- toJSVal canvasId
-  setProp "canvas" v o
+  setProp "canvas" canvasId o
   THREE.Internal.new WebGLRenderer "WebGLRenderer" o
-
-{-
-theCanvas :: Property WebGLRenderer JSString
-theCanvas = property "canvas"
--}
 
