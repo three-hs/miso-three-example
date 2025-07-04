@@ -1,12 +1,12 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
-import Control.Monad (void)
+import Control.Monad (void, when)
 import Data.Function ((&))
 import Data.Foldable (traverse_)
 import Miso
+import Miso.Lens qualified as Lens
 import Miso.Canvas as Canvas
 import Miso.String (MisoString)
 
@@ -25,47 +25,43 @@ import THREE.Vector3
 import THREE.WebGLRenderer
 
 import API
-
-----------------------------------------------------------------------
--- model
-----------------------------------------------------------------------
-
-type Model = ()
+import Model
 
 ----------------------------------------------------------------------
 -- actions
 ----------------------------------------------------------------------
 
-type Action = ()
+data Action 
+  = ActionInitRenderer
 
 ----------------------------------------------------------------------
 -- view handler
 ----------------------------------------------------------------------
 
 handleView :: Model -> View Action
-handleView () = div_ [] 
+handleView model = div_ [] 
   [ p_ []
       [ a_ [ href_ "https://github.com/juliendehos/miso-three-test" ] [ text "source" ]
       , text " - "
       , a_ [ href_ "https://juliendehos.github.io/miso-three-test/" ] [ text "demo" ]
       ]
-  , three_
+  , three_ (model Lens.^. mIsInitialized)
   ]
 
 myCanvas :: MisoString
 myCanvas = "myCanvas"
 
-three_ :: View Action
-three_ = 
+three_ :: Bool -> View Action
+three_ initOk = 
   Canvas.canvas 
   [ id_ myCanvas
   -- , width_ "800"
   -- , height_ "600"
   ] 
-  (asyncCallback draw)
+  (asyncCallback (draw initOk))
 
-draw :: Three ()
-draw = do
+draw :: Bool -> Three ()
+draw initOk = do
 
   winWidth <- winInnerWidth
   winHeight <- winInnerHeight
@@ -97,11 +93,12 @@ draw = do
   camera1 <- THREE.PerspectiveCamera.new (70, winWidth / winHeight, 0.1, 100)
   camera1 & position !. z .= 6
 
-  renderer1 <- THREE.WebGLRenderer.new
-  -- renderer1 <- myNewWebGLRenderer myCanvas
-  -- renderer1 & theCanvas .= myCanvas
-  renderer1 & setSize (winWidthI, winHeightI, True)
-  renderer1 & render (scene1, camera1)
+  when initOk $ do
+    -- renderer1 <- THREE.WebGLRenderer.new
+    renderer1 <- myNewWebGLRenderer myCanvas
+    -- renderer1 & theCanvas .= myCanvas
+    renderer1 & setSize (winWidthI, winHeightI, True)
+    renderer1 & render (scene1, camera1)
 
   {-
   renderer1 & setAnimationLoop (\_ _ [valTime] -> do
@@ -111,7 +108,7 @@ draw = do
     )
 
   domElement renderer1 >>= appendInBody 
--}
+  -}
 
 ----------------------------------------------------------------------
 -- update handler
@@ -119,7 +116,8 @@ draw = do
 
 handleUpdate :: Action -> Effect Model Action
 
-handleUpdate () = pure ()
+handleUpdate ActionInitRenderer = 
+  mIsInitialized Lens..= True
 
 ----------------------------------------------------------------------
 -- main
@@ -131,13 +129,10 @@ foreign export javascript "hs_start" main :: IO ()
 
 main :: IO ()
 main = run $ do
-
-  let model = ()
-
-      app :: Component "app" Model Action
-      app = (defaultComponent model handleUpdate handleView)
-        { logLevel = DebugAll
-        }
-
-  startComponent app
+  let model = mkModel
+  startComponent
+    (component model handleUpdate handleView)
+      { logLevel = DebugAll
+      , initialAction = Just ActionInitRenderer
+      }
 

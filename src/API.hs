@@ -6,10 +6,11 @@ module API
   , winInnerWidth
   , winInnerHeight
   , myNewWebGLRenderer
-  , theCanvas
+  -- , theCanvas
   , appendInBody
   ) where
 
+import Control.Monad (void)
 import Control.Lens hiding ((#))
 import Language.Javascript.JSaddle as JS
 
@@ -32,12 +33,13 @@ winInnerHeight = valToNumber =<< jsg "window"  ^. js "innerHeight"
 myNewWebGLRenderer :: JSString -> THREE.Internal.Three WebGLRenderer
 myNewWebGLRenderer canvasId = do
   o <- obj
+  -- o <# "canvas" $ canvasId
   v <- toJSVal canvasId
   setProp "canvas" v o
-  -- o <# "canvas" $ canvasId
   THREE.Internal.new WebGLRenderer "WebGLRenderer" o
 
+{-
 theCanvas :: Property WebGLRenderer JSString
 theCanvas = property "canvas"
-
+-}
 
