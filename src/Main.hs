@@ -4,7 +4,7 @@
 
 module Main where
 
-import Control.Monad (void)
+import Control.Monad (void, when)
 import Data.Function ((&))
 import Data.Foldable (traverse_)
 import GHC.Generics
@@ -59,6 +59,7 @@ data Context = Context
 
 data Action
   = ActionTime Double
+  | ActionSwitchRunning
 
 ----------------------------------------------------------------------
 -- view handler
@@ -66,14 +67,18 @@ data Action
 
 handleView :: Model -> View Action
 handleView model = div_ [] 
-  [ h1_ [] [ text "miso-three-test" ]
+  [ h1_ [] [ "miso-three-test" ]
   , p_ []
-      [ a_ [ href_ "https://github.com/juliendehos/miso-three-test" ] [ text "source" ]
-      , text " - "
-      , a_ [ href_ "https://juliendehos.github.io/miso-three-test/" ] [ text "demo" ]
+      [ a_ [ href_ "https://github.com/juliendehos/miso-three-test" ] [ "source" ]
+      , " - "
+      , a_ [ href_ "https://juliendehos.github.io/miso-three-test/" ] [ "demo" ]
+      , " - "
+      , button_ [ onClick ActionSwitchRunning ] [ pauseOrRun ]
       ]
   , three_ model
   ]
+  where
+    pauseOrRun = if model Lens.^. mRunning then "pause" else "run"
 
 three_ :: Model -> View Action
 three_ model = 
@@ -116,9 +121,10 @@ initCanvas domref = do
   pure $ Context renderer1 scene1 camera1 mesh2
   
 drawCanvas :: Model -> Context -> Three ()
-drawCanvas model Context {..} = do
-  cube & rotation !. y .= (model Lens.^. mTime)
-  renderer & render (scene, camera)
+drawCanvas model Context {..} = 
+  when (model Lens.^. mRunning) $ do
+    cube & rotation !. y .= (model Lens.^. mTime)
+    renderer & render (scene, camera)
 
 ----------------------------------------------------------------------
 -- update handler
@@ -129,6 +135,9 @@ handleUpdate :: Action -> Effect Model Action
 handleUpdate (ActionTime t) = do
   mTime Lens..= t
   io (ActionTime <$> myGetTime)
+
+handleUpdate ActionSwitchRunning = do
+  mRunning Lens.%= not
 
 ----------------------------------------------------------------------
 -- main
