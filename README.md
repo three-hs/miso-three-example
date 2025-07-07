@@ -1,4 +1,4 @@
-# three-miso-example
+# :ramen: three-miso-example
 
 ## Try online
 
