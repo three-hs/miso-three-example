@@ -27,7 +27,7 @@ data Action
 
 handleView :: Model -> View Action
 handleView model = div_ [] 
-  [ h1_ [] [ "three-miso-example" ]
+  [ h1_ [] [ "three-miso" ]
   , div_ [] (map mkCanvas [1..5])
   , p_ [] [ button_ 
               [ Styles (fromList [Style.width "100px"])
@@ -35,9 +35,9 @@ handleView model = div_ []
               ]
               [ pauseOrRun ] ]
   , p_ []
-      [ a_ [ href_ "https://github.com/three-hs/three-miso-example" ] [ "source" ]
+      [ a_ [ href_ "https://github.com/haskell-miso/three-miso" ] [ "source" ]
       , " - "
-      , a_ [ href_ "https://three-hs.github.io/three-miso-example/" ] [ "demo" ]
+      , a_ [ href_ "https://haskell-miso.github.io/three-miso/" ] [ "demo" ]
       ]
   ]
   where

@@ -7,6 +7,7 @@ update:
 	wasm32-wasi-cabal update
 
 build:
+	wasm32-wasi-cabal clean
 	wasm32-wasi-cabal build 
 	rm -rf public
 	cp -r static public
