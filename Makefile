@@ -1,13 +1,12 @@
 
 .PHONY= update build optim
 
-all: update build optim
+all: clean update build optim
 
 update:
 	wasm32-wasi-cabal update
 
 build:
-	make clean
 	wasm32-wasi-cabal build 
 	rm -rf public
 	cp -r static public
