@@ -1,8 +1,8 @@
-# :ramen: three-miso-example
+# :ramen: three-miso
 
 ## Try online
 
-- [https://three-hs.github.io/three-miso-example/](https://three-hs.github.io/three-miso-example/)
+- [https://haskell-miso.github.io/three-miso](https://haskell-miso.github.io/three-miso)
 
 
 ## Build and run
