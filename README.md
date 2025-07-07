@@ -1,8 +1,8 @@
-# miso-three-test
+# three-miso-example
 
 ## Try online
 
-- [https://juliendehos.github.io/miso-three-test/](https://juliendehos.github.io/miso-three-test/)
+- [https://three-hs.github.io/three-miso-example/](https://three-hs.github.io/three-miso-example/)
 
 
 ## Build and run

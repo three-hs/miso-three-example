@@ -2,11 +2,13 @@
 
 module Main where
 
+import Data.Map (fromList)
 import Language.Javascript.JSaddle (JSM)
 import Miso
 import Miso.Lens 
 import Miso.Canvas qualified as Canvas
 import Miso.String (ms)
+import Miso.Style qualified as Style
 
 import Model
 import MyThree
@@ -25,23 +27,26 @@ data Action
 
 handleView :: Model -> View Action
 handleView model = div_ [] 
-  [ h1_ [] [ "miso-three-test" ]
+  [ h1_ [] [ "three-miso-example" ]
   , p_ []
-      [ a_ [ href_ "https://github.com/juliendehos/miso-three-test" ] [ "source" ]
+      [ a_ [ href_ "https://github.com/three-hs/three-miso-example" ] [ "source" ]
       , " - "
-      , a_ [ href_ "https://juliendehos.github.io/miso-three-test/" ] [ "demo" ]
+      , a_ [ href_ "https://three-hs.github.io/three-miso-example/" ] [ "demo" ]
       , " - "
       , button_ [ onClick ActionSwitchRunning ] [ pauseOrRun ]
       ]
-  , Canvas.canvas_
-      [ width_ (ms canvasWidth)
-      , height_ (ms canvasHeight)
-      ] 
-      initCanvas
-      (drawCanvas model)
+  , div_ [] (map mkCanvas [1..5])
   ]
   where
     pauseOrRun = if model ^. mRunning then "pause" else "run"
+    
+    mkCanvas offset = Canvas.canvas_
+      [ width_ (ms canvasWidth)
+      , height_ (ms canvasHeight)
+      , Styles (fromList [Style.margin "5px"])
+      ] 
+      initCanvas
+      (drawCanvas model offset)
 
 ----------------------------------------------------------------------
 -- update handler

@@ -33,8 +33,8 @@ import Model
 ----------------------------------------------------------------------
 
 canvasWidth, canvasHeight :: Int
-canvasWidth = 800
-canvasHeight = 600
+canvasWidth = 200
+canvasHeight = 150
 
 canvasWidthD, canvasHeightD :: Double
 canvasWidthD = fromIntegral canvasWidth
@@ -79,7 +79,7 @@ initCanvas domref = do
   traverse_ (`add` scene1) [mesh1, mesh2]
 
   camera1 <- THREE.PerspectiveCamera.new (70, canvasWidthD/canvasHeightD, 0.1, 100)
-  camera1 & position !. z .= 6
+  camera1 & position !. z .= 3
 
   renderer1 <- THREE.WebGLRenderer.new (Just domref)
   renderer1 & setSize (canvasWidth, canvasHeight, True)
@@ -90,9 +90,9 @@ initCanvas domref = do
 -- draw canvas
 ----------------------------------------------------------------------
 
-drawCanvas :: Model -> Context -> Three ()
-drawCanvas model Context {..} = 
+drawCanvas :: Model -> Double -> Context -> Three ()
+drawCanvas model speed Context {..} = 
   when (model Lens.^. mRunning) $ do
-    cube & rotation !. y .= (model Lens.^. mTime)
+    cube & rotation !. y .= (speed * model Lens.^. mTime)
     renderer & render (scene, camera)
 
