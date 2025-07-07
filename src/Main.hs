@@ -11,8 +11,8 @@ import GHC.Generics
 import Language.Javascript.JSaddle as JS
 import Miso
 import Miso.Lens qualified as Lens
+import Miso.Canvas qualified as Canvas
 import Miso.String (ms)
-import Miso.THREE (canvas)
 
 import THREE.BoxGeometry
 import THREE.Internal
@@ -82,7 +82,7 @@ handleView model = div_ []
 
 three_ :: Model -> View Action
 three_ model = 
-  canvas 
+  Canvas.canvas_
   [ width_ (ms canvasWidth)
   , height_ (ms canvasHeight)
   ] 
