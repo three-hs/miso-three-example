@@ -1,17 +1,21 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Main where
 
 import Control.Monad (void)
 import Data.Function ((&))
 import Data.Foldable (traverse_)
+import GHC.Generics
+import Language.Javascript.JSaddle as JS
 import Miso
 import Miso.Lens qualified as Lens
-import Miso.Canvas as Canvas
-import Miso.String (MisoString, ms)
+import Miso.String (ms)
+import Miso.THREE (canvas)
 
 import THREE.BoxGeometry
-import THREE.Internal 
+import THREE.Internal
 import THREE.Light
 import THREE.Mesh
 import THREE.MeshLambertMaterial
@@ -24,15 +28,11 @@ import THREE.TextureLoader
 import THREE.Vector3
 import THREE.WebGLRenderer
 
-import API
 import Model
 
 ----------------------------------------------------------------------
 -- parameters
 ----------------------------------------------------------------------
-
-canvasId :: MisoString
-canvasId = "threeCanvas"
 
 canvasWidth, canvasHeight :: Int
 canvasWidth = 800
@@ -41,6 +41,17 @@ canvasHeight = 600
 canvasWidthD, canvasHeightD :: Double
 canvasWidthD = fromIntegral canvasWidth
 canvasHeightD = fromIntegral canvasHeight
+
+----------------------------------------------------------------------
+-- canvas/three context
+----------------------------------------------------------------------
+
+data Context = Context
+  { renderer  :: THREE.WebGLRenderer.WebGLRenderer
+  , scene     :: THREE.Scene.Scene
+  , camera    :: THREE.PerspectiveCamera.PerspectiveCamera
+  , cube      :: THREE.Mesh.Mesh
+  } deriving (Generic, FromJSVal, ToJSVal)
 
 ----------------------------------------------------------------------
 -- actions
@@ -66,16 +77,15 @@ handleView model = div_ []
 
 three_ :: Model -> View Action
 three_ model = 
-  Canvas.canvas 
-  [ id_ canvasId
-  , width_ (ms canvasWidth)
+  canvas 
+  [ width_ (ms canvasWidth)
   , height_ (ms canvasHeight)
   ] 
-  (asyncCallback $ draw model)
+  initCanvas
+  (drawCanvas model)
 
-draw :: Model -> Three ()
-draw model = do
-
+initCanvas :: DOMRef -> Three Context
+initCanvas domref = do
   scene1 <- THREE.Scene.new 
 
   light1 <- THREE.PointLight.new
@@ -91,8 +101,7 @@ draw model = do
   texture2 <- THREE.TextureLoader.new >>= load "miso.png"
   material2 <- THREE.MeshLambertMaterial.new
   material2 & THREE.MeshLambertMaterial.map .= Just texture2
-  -- geometry2 <- THREE.BoxGeometry.new (1, 1, 1, Nothing, Nothing, Nothing)
-  geometry2 <- THREE.BoxGeometry.new (1, 1, 1, Just 1, Just 1, Just 1)
+  geometry2 <- THREE.BoxGeometry.new (1, 1, 1)
   mesh2 <- THREE.Mesh.new (geometry2, material2)
   (mesh2 ^. position) !.. setXYZ 1 0 0 
 
@@ -101,18 +110,15 @@ draw model = do
   camera1 <- THREE.PerspectiveCamera.new (70, canvasWidthD/canvasHeightD, 0.1, 100)
   camera1 & position !. z .= 6
 
-  renderer1 <- getElementById canvasId >>= myNewWebGLRenderer 
+  renderer1 <- THREE.WebGLRenderer.new (Just domref)
   renderer1 & setSize (canvasWidth, canvasHeight, True)
 
-{-
-  mesh2 & rotation !. y .= (model Lens.^. mTime / 1000)
-  renderer1 & render (scene1, camera1)
--}
-  renderer1 & setAnimationLoop (\_ _ [valTime] -> do
-    time <- valToNumber valTime
-    mesh2 & rotation !. y .= (time/1000)
-    renderer1 & render (scene1, camera1)
-    )
+  pure $ Context renderer1 scene1 camera1 mesh2
+  
+drawCanvas :: Model -> Context -> Three ()
+drawCanvas model Context {..} = do
+  cube & rotation !. y .= (model Lens.^. mTime)
+  renderer & render (scene, camera)
 
 ----------------------------------------------------------------------
 -- update handler
@@ -122,7 +128,7 @@ handleUpdate :: Action -> Effect Model Action
 
 handleUpdate (ActionTime t) = do
   mTime Lens..= t
-  -- io (ActionTime <$> myGetTime)
+  io (ActionTime <$> myGetTime)
 
 ----------------------------------------------------------------------
 -- main
@@ -132,12 +138,15 @@ handleUpdate (ActionTime t) = do
 foreign export javascript "hs_start" main :: IO ()
 #endif
 
+myGetTime :: JSM Double
+myGetTime = (* 0.001) <$> now
+
 main :: IO ()
 main = run $ do
   let model = mkModel
   startComponent
     (component model handleUpdate handleView)
       { logLevel = DebugAll
-      -- , initialAction = Just (ActionTime 0)
+      , initialAction = Just (ActionTime 0)
       }
 

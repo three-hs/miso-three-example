@@ -15,7 +15,14 @@ source-repository-package
 source-repository-package
   type: git
   location: https://github.com/three-hs/three.hs
-  -- branch: master
+  branch: master
   -- location: https://github.com/juliendehos/three.hs
-  tag: 5ca131c
+  -- tag: fa1a02b
+
+source-repository-package
+  type: git
+  -- location: https://github.com/haskell-miso/miso-three
+  location: https://github.com/juliendehos/miso-three
+  -- branch: master
+  tag: b0ce301
 
