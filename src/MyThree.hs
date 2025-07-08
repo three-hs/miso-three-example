@@ -13,11 +13,13 @@ import Miso
 import Miso.Lens qualified as Lens
 
 import THREE.BoxGeometry
+import THREE.Controls
 import THREE.Internal
 import THREE.Light
 import THREE.Mesh
 import THREE.MeshLambertMaterial
 import THREE.Object3D
+import THREE.OrbitControls
 import THREE.PerspectiveCamera
 import THREE.PointLight
 import THREE.Scene
@@ -83,6 +85,9 @@ initCanvas domref = do
 
   renderer1 <- THREE.WebGLRenderer.new (Just domref)
   renderer1 & setSize (canvasWidth, canvasHeight, True)
+
+  controls1 <- THREE.OrbitControls.new (camera1, domref)
+  controls1 & enabled .= True
 
   pure $ Context renderer1 scene1 camera1 mesh2
 

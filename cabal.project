@@ -13,10 +13,12 @@ source-repository-package
 
 source-repository-package
   type: git
-  location: https://github.com/three-hs/three.hs
-  branch: master
+  -- location: https://github.com/three-hs/three.hs
+  -- branch: master
+  location: https://github.com/juliendehos/three.hs
+  tag: 2a24cc6
 
-source-repository-package
-  type: git
-  location: https://github.com/haskell-miso/jsaddle-run
-  branch: master
+-- source-repository-package
+--   type: git
+--   location: https://github.com/haskell-miso/jsaddle-run
+--   branch: master
