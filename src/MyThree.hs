@@ -8,7 +8,7 @@ import Control.Monad (void, when)
 import Data.Function ((&))
 import Data.Foldable (traverse_)
 import GHC.Generics
-import Language.Javascript.JSaddle as JS
+import Language.Javascript.JSaddle (FromJSVal, ToJSVal)
 import Miso
 import Miso.Lens qualified as Lens
 

@@ -3,7 +3,6 @@
 module Main where
 
 import Data.Map (fromList)
-import Language.Javascript.JSaddle (JSM)
 import Miso
 import Miso.Lens 
 import Miso.Canvas qualified as Canvas
@@ -59,7 +58,7 @@ handleUpdate :: Action -> Effect Model Action
 
 handleUpdate (ActionTime t) = do
   mTime .= t
-  io (ActionTime <$> myGetTime)
+  io (ActionTime . (*0.001) <$> now)   -- get current time in seconds
 
 handleUpdate ActionSwitchRunning = do
   mRunning %= not
@@ -71,9 +70,6 @@ handleUpdate ActionSwitchRunning = do
 #ifdef WASM
 foreign export javascript "hs_start" main :: IO ()
 #endif
-
-myGetTime :: JSM Double
-myGetTime = (* 0.001) <$> now
 
 main :: IO ()
 main = run $ do
